@@ -138,3 +138,11 @@ sh_test_with_runfiles_lib(
     args = ["$(location :verible-verilog-format)"],
     data = [":verible-verilog-format"],
 )
+
+sh_test_with_runfiles_lib(
+    name = "format-file-issue2073_test",
+    size = "small",
+    srcs = ["format_file_test_issue2073.sh"],
+    args = ["$(location :verible-verilog-format)"],
+    data = [":verible-verilog-format"],
+)
