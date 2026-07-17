@@ -743,31 +743,19 @@ class ContinuationCommentAligner {
     return column;
   }
 
-  static void AdjustColumnUsingTokenSpacing(
-      const verible::FormattedToken &token, int *column) {
-    switch (token.before.action) {
-      case verible::SpacingDecision::kPreserve: {
-        if (token.before.preserved_space_start !=
-            verible::string_view_null_iterator()) {
-          *column += token.OriginalLeadingSpaces().length();
-        } else {
-          *column += token.before.spaces;
-        }
-        break;
-      }
-      case verible::SpacingDecision::kWrap:
-        *column = 0;
-        ABSL_FALLTHROUGH_INTENDED;
-      case verible::SpacingDecision::kAlign:
-      case verible::SpacingDecision::kAppend:
-        *column += token.before.spaces;
-        break;
-    }
-  }
-
   static int CalculateEolCommentColumn(const verible::FormattedExcerpt &line) {
+    // Compute the starting column of the trailing EOL comment the same way
+    // FormattedExcerpt::FormattedText emits spaces, including:
+    //   * wrap indents (SpacingDecision::kWrap), and
+    //   * preserved leading whitespace that may contain newlines (common when
+    //     an original line break is kept). Counting those newlines as width
+    //     made continuation comments land on the wrong column and fail to
+    //     converge on re-format (GitHub issue 2542).
+    if (line.Tokens().empty()) return 0;
+
     int column = 0;
-    const auto &front = line.Tokens().front();
+    const auto &tokens = line.Tokens();
+    const auto &front = tokens.front();
 
     if (front.before.action != verible::SpacingDecision::kPreserve) {
       column += line.IndentationSpaces();
@@ -777,12 +765,39 @@ class ContinuationCommentAligner {
     }
     column += front.token->text().length();
 
-    for (const auto &ftoken : verible::make_range(line.Tokens().begin() + 1,
-                                                  line.Tokens().end() - 1)) {
-      AdjustColumnUsingTokenSpacing(ftoken, &column);
-      column += ftoken.token->text().length();
+    for (size_t i = 1; i < tokens.size(); ++i) {
+      const auto &ftoken = tokens[i];
+      switch (ftoken.before.action) {
+        case verible::SpacingDecision::kPreserve: {
+          if (ftoken.before.preserved_space_start !=
+              verible::string_view_null_iterator()) {
+            const std::string_view leading = ftoken.OriginalLeadingSpaces();
+            const auto last_nl = leading.find_last_of('\n');
+            if (last_nl == std::string_view::npos) {
+              column += leading.length();
+            } else {
+              column = static_cast<int>(leading.length() - last_nl - 1);
+            }
+          } else {
+            column += ftoken.before.spaces;
+          }
+          break;
+        }
+        case verible::SpacingDecision::kWrap:
+          // Newline then only the wrap indent (same as FormattedToken emit).
+          column = ftoken.before.spaces;
+          break;
+        case verible::SpacingDecision::kAlign:
+        case verible::SpacingDecision::kAppend:
+          column += ftoken.before.spaces;
+          break;
+      }
+      // Do not add the last token's length: that is the EOL comment whose
+      // starting column we want.
+      if (i + 1 < tokens.size()) {
+        column += ftoken.token->text().length();
+      }
     }
-    AdjustColumnUsingTokenSpacing(line.Tokens().back(), &column);
 
     CHECK_GE(column, 0);
     return column;
