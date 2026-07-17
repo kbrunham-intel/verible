@@ -19290,6 +19290,7 @@ TEST(FormatterEndToEndTest, EndElseIfWithEOLCommentConverges) {
 }
 
 
+
 // Regression for https://github.com/chipsalliance/verible/issues/2542:
 // Continuation EOL comments after a wrapped assign must keep a stable column
 // across re-format (convergence).
@@ -19335,6 +19336,7 @@ TEST(FormatterEndToEndTest, ContinuationCommentAfterWrappedAssignConverges) {
 }
 
 
+
 // Regression for https://github.com/chipsalliance/verible/issues/2544:
 // Wrapping a $bits(...)'(...) cast may leave `MACRO at EOL, reclassifying
 // MacroIdentifier as MacroIdItem. FormatEquivalent must accept that, and
@@ -19352,6 +19354,7 @@ TEST(FormatterEndToEndTest, MacroBeforeCloseParenFormatEquivalent) {
   EXPECT_OK(status) << status.message();
   EXPECT_THAT(stream.str(), testing::HasSubstr("`TOKEN_BYTE"));
 }
+
 
 
 // Regression for https://github.com/chipsalliance/verible/issues/2539:
@@ -19378,6 +19381,52 @@ TEST(FormatterEndToEndTest, PortListCommentWithLineContinuationDoesNotAbort) {
   EXPECT_THAT(out, testing::HasSubstr("endmodule"));
   // Comment line and first port remain on separate lines.
   EXPECT_THAT(out, testing::ContainsRegex(R"(//\\\n\s*input a)"));
+}
+
+
+
+// Regression for https://github.com/chipsalliance/verible/issues/2547:
+// A localparam initialized to a sum of long macros must converge: infix `+`
+// stays with the following operand so re-format does not oscillate between
+// `+\n`MACRO` and `+ `MACRO`.
+TEST(FormatterEndToEndTest, LongMacroSumLocalparamConverges) {
+  static constexpr FormatterTestCase kTestCases[] = {
+      {"module m;\n"
+       "  localparam N =\n"
+       "      `MACRO_GEN3_SCRAMBLE_LFSR_REGOUT\n"
+       "      + `MACRO_GEN3_SCRAMBLE_REGIN\n"
+       "      + `MACRO_GEN3_SCRAMBLE_REGOUT\n"
+       "      ;\n"
+       "endmodule\n",
+       "module m;\n"
+       "  localparam N =\n"
+       "  `MACRO_GEN3_SCRAMBLE_LFSR_REGOUT\n"
+       "  + `MACRO_GEN3_SCRAMBLE_REGIN\n"
+       "  + `MACRO_GEN3_SCRAMBLE_REGOUT;\n"
+       "endmodule\n"},
+      // Already in pass-1 form must stay stable.
+      {"module m;\n"
+       "  localparam N =\n"
+       "  `MACRO_GEN3_SCRAMBLE_LFSR_REGOUT\n"
+       "  + `MACRO_GEN3_SCRAMBLE_REGIN\n"
+       "  + `MACRO_GEN3_SCRAMBLE_REGOUT;\n"
+       "endmodule\n",
+       "module m;\n"
+       "  localparam N =\n"
+       "  `MACRO_GEN3_SCRAMBLE_LFSR_REGOUT\n"
+       "  + `MACRO_GEN3_SCRAMBLE_REGIN\n"
+       "  + `MACRO_GEN3_SCRAMBLE_REGOUT;\n"
+       "endmodule\n"},
+  };
+  FormatStyle style;  // default column_limit (100)
+  for (const auto &test_case : kTestCases) {
+    VLOG(1) << "code-to-format:\n" << test_case.input << "<EOF>";
+    std::ostringstream stream;
+    const auto status =
+        FormatVerilog(test_case.input, "<filename>", style, stream);
+    EXPECT_OK(status) << status.message();
+    EXPECT_EQ(stream.str(), test_case.expected) << "code:\n" << test_case.input;
+  }
 }
 
 
