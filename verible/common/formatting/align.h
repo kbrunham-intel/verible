@@ -410,19 +410,24 @@ ColumnPositionTree ScanPartitionForAlignmentCells_WithNonTreeTokens(
     // Use next token as begining of trailing non-tree tokens
     trailing_tokens.set_begin(ftoken_it + 1);
 
-    // Breaking following condition leads to e.g. concatenation of EOL comment
-    // and code in a single line. To fix situation that lead to this, flatten
-    // token partitions that contain EOL comment subpartition just before a
-    // subpartition that starts with the same token as Origin(). Example of a
-    // partition that needs flattening:
+    // Leading non-tree tokens (e.g. // comments, line-continuation `\`) cannot
+    // be placed into alignment cells when the first syntax-tree token must
+    // start a new line (SpacingOptions::kMustWrap). Including them would glue
+    // the leading tokens onto the origin line via kInline cells.
     //
-    //   { (>>[...], (origin: "input bit second"))
-    //     { (>>[// comment] }
-    //     { (>>[input bit second], (origin: "input")) }
-    //   }
-    CHECK(leading_tokens.empty() || first_tree_token_it == ftokens.end() ||
-          first_tree_token_it->before.break_decision !=
-              SpacingOptions::kMustWrap);
+    // This shape often appears when a `//` comment is followed by `\` (line
+    // continuation) and is partitioned with the following port/declaration
+    // (GitHub issue 2539). Prefer leaving leading tokens out of alignment
+    // over CHECK-failing. Callers should also ignore such partitions (see
+    // PartitionHasLeadingTokensBeforeForcedWrap) so ApplyAlignment never
+    // builds a kInline prolog for them. A future improvement could split the
+    // comment into its own ignored row so the following declaration can still
+    // participate in alignment.
+    if (!leading_tokens.empty() && first_tree_token_it != ftokens.end() &&
+        first_tree_token_it->before.break_decision ==
+            SpacingOptions::kMustWrap) {
+      leading_tokens.set_end(leading_tokens.begin());
+    }
   } else {
     // All tokens are passed as leading
     leading_tokens.set_end(ftokens.end());
