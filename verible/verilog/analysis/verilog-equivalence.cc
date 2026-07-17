@@ -167,11 +167,21 @@ DiffStatus LexicallyEquivalent(
   DiffStatus diff_status = DiffStatus::kEquivalent;
   auto recursive_comparator = [&](const TokenSequence::const_iterator l,
                                   const TokenSequence::const_iterator r) {
+    // Some token enums differ only by surrounding whitespace (e.g. whether a
+    // macro or ')' ends a line). Treat those pairs as matching enums when the
+    // spelling is unchanged so FormatEquivalent tolerates re-wrapping.
+    const bool whitespace_dependent_enum_match =
+        ((l->token_enum() == verilog_tokentype::MacroCallCloseToEndLine &&
+          r->text() == ")") ||
+         (r->token_enum() == verilog_tokentype::MacroCallCloseToEndLine &&
+          l->text() == ")") ||
+         ((l->token_enum() == verilog_tokentype::MacroIdentifier ||
+           l->token_enum() == verilog_tokentype::MacroIdItem) &&
+          (r->token_enum() == verilog_tokentype::MacroIdentifier ||
+           r->token_enum() == verilog_tokentype::MacroIdItem) &&
+          l->text() == r->text()));
     if (l->token_enum() != r->token_enum() &&
-        !((l->token_enum() == verilog_tokentype::MacroCallCloseToEndLine &&
-           r->text() == ")") ||
-          (r->token_enum() == verilog_tokentype::MacroCallCloseToEndLine &&
-           l->text() == ")"))) {
+        !whitespace_dependent_enum_match) {
       if (errstream != nullptr) {
         *errstream << "Mismatched token enums.  got: ";
         token_printer(*l, *errstream);
@@ -256,6 +266,16 @@ DiffStatus FormatEquivalent(std::string_view left, std::string_view right,
              (l.text() == ")")) ||
             ((l.token_enum() == verilog_tokentype::MacroCallCloseToEndLine) &&
              (r.text() == ")"))) {
+          return true;
+        }
+        // MacroIdentifier vs MacroIdItem depends only on whether the macro
+        // ends the line (see POST_MACRO_ID in verilog.lex). Spelling-equal
+        // macros are format-equivalent across that reclassification.
+        if ((l.token_enum() == verilog_tokentype::MacroIdentifier ||
+             l.token_enum() == verilog_tokentype::MacroIdItem) &&
+            (r.token_enum() == verilog_tokentype::MacroIdentifier ||
+             r.token_enum() == verilog_tokentype::MacroIdItem) &&
+            l.text() == r.text()) {
           return true;
         }
         return l.EquivalentWithoutLocation(r);
