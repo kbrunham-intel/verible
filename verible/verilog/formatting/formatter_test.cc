@@ -19217,346 +19217,6 @@ TEST(FormatterEndToEndTest,
 }
 
 
-
-====\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo    = 1'b1;\n"
-       "  assign baar   = 1'b0;\n"
-       "  // ============\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-  };
-  FormatStyle style;
-  style.column_limit = 40;
-  style.indentation_spaces = 2;
-  style.wrap_spaces = 4;
-  style.alignment_group_boundary = AlignmentGroupBoundary::kNone;
-  style.assignment_statement_alignment = AlignmentPolicy::kAlign;
-  for (const auto &test_case : kTestCases) {
-    VLOG(1) << "code-to-format:\n" << test_case.input << "<EOF>";
-    std::ostringstream stream;
-    const auto status =
-        FormatVerilog(test_case.input, "<filename>", style, stream);
-    EXPECT_OK(status) << status.message();
-    EXPECT_EQ(stream.str(), test_case.expected) << "code:\n" << test_case.input;
-  }
-}
-
-TEST(FormatterEndToEndTest, AlignmentGroupBoundarySeparatorComments) {
-  static constexpr FormatterTestCase kTestCases[] = {
-      {// Separator comment breaks alignment group
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ============\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  // ============\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Dashes separator also breaks
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ------------\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  // ------------\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Captioned divider (text between separator runs) also breaks
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ------ section heading ------\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  // ------ section heading ------\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Leading-only divider run with trailing caption text
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ==== Registers\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  // ==== Registers\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// No space after // also works
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "//============\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  //============\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Slash separator (/////) also works
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "//////////\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  //////////\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Regular comment does NOT break alignment
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// Title text\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo    = 1'b1;\n"
-       "  assign baar   = 1'b0;\n"
-       "  // Title text\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Multi-line comment block with separators
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ============\n"
-       "// Title\n"
-       "// ============\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "  // ============\n"
-       "  // Title\n"
-       "  // ============\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Short repeated body (3 chars) does NOT break
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ---\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo    = 1'b1;\n"
-       "  assign baar   = 1'b0;\n"
-       "  // ---\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Declarations also respect separator comments
-       "module m;\n"
-       "logic       a;\n"
-       "logic [7:0] b;\n"
-       "// ============\n"
-       "logic c_long_name;\n"
-       "logic d;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  logic       a;\n"
-       "  logic [7:0] b;\n"
-       "  // ============\n"
-       "  logic c_long_name;\n"
-       "  logic d;\n"
-       "endmodule\n"},
-      {// Statements in always blocks
-       "module m;\n"
-       "always_comb begin\n"
-       "aaaaa = b;\n"
-       "c     = 1'b0;\n"
-       "// ============\n"
-       "dd = eee;\n"
-       "ffffff = g;\n"
-       "end\n"
-       "endmodule\n",
-       "module m;\n"
-       "  always_comb begin\n"
-       "    aaaaa = b;\n"
-       "    c     = 1'b0;\n"
-       "    // ============\n"
-       "    dd     = eee;\n"
-       "    ffffff = g;\n"
-       "  end\n"
-       "endmodule\n"},
-  };
-  FormatStyle style;
-  style.column_limit = 40;
-  style.indentation_spaces = 2;
-  style.wrap_spaces = 4;
-  style.alignment_group_boundary = AlignmentGroupBoundary::kSeparatorComments;
-  style.assignment_statement_alignment = AlignmentPolicy::kAlign;
-  style.module_net_variable_alignment = AlignmentPolicy::kAlign;
-  for (const auto &test_case : kTestCases) {
-    VLOG(1) << "code-to-format:\n" << test_case.input << "<EOF>";
-    std::ostringstream stream;
-    const auto status =
-        FormatVerilog(test_case.input, "<filename>", style, stream);
-    EXPECT_OK(status) << status.message();
-    EXPECT_EQ(stream.str(), test_case.expected) << "code:\n" << test_case.input;
-  }
-}
-
-TEST(FormatterEndToEndTest, AlignmentGroupBoundaryBlankLines) {
-  static constexpr FormatterTestCase kTestCases[] = {
-      {// Blank line breaks alignment group
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// No blank line: single alignment group
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo    = 1'b1;\n"
-       "  assign baar   = 1'b0;\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Single item before blank line (not enough for alignment)
-       "module m;\n"
-       "assign foo = 1'b1;\n"
-       "\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo = 1'b1;\n"
-       "\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-      {// Separator comment does NOT break (only blank lines)
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "// ============\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo    = 1'b1;\n"
-       "  assign baar   = 1'b0;\n"
-       "  // ============\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "endmodule\n"},
-  };
-  FormatStyle style;
-  style.column_limit = 40;
-  style.indentation_spaces = 2;
-  style.wrap_spaces = 4;
-  style.alignment_group_boundary = AlignmentGroupBoundary::kBlankLines;
-  style.assignment_statement_alignment = AlignmentPolicy::kAlign;
-  for (const auto &test_case : kTestCases) {
-    VLOG(1) << "code-to-format:\n" << test_case.input << "<EOF>";
-    std::ostringstream stream;
-    const auto status =
-        FormatVerilog(test_case.input, "<filename>", style, stream);
-    EXPECT_OK(status) << status.message();
-    EXPECT_EQ(stream.str(), test_case.expected) << "code:\n" << test_case.input;
-  }
-}
-
-TEST(FormatterEndToEndTest,
-     AlignmentGroupBoundaryBlankLinesAndSeparatorComments) {
-  static constexpr FormatterTestCase kTestCases[] = {
-      {// Both blank line and separator break groups
-       "module m;\n"
-       "assign foo  = 1'b1;\n"
-       "assign baar = 1'b0;\n"
-       "\n"
-       "assign baaaaz = 1'b1;\n"
-       "assign c      = 1'b0;\n"
-       "// ============\n"
-       "assign dd  = 1'b1;\n"
-       "assign eee = 1'b0;\n"
-       "endmodule\n",
-       "module m;\n"
-       "  assign foo  = 1'b1;\n"
-       "  assign baar = 1'b0;\n"
-       "\n"
-       "  assign baaaaz = 1'b1;\n"
-       "  assign c      = 1'b0;\n"
-       "  // ============\n"
-       "  assign dd  = 1'b1;\n"
-       "  assign eee = 1'b0;\n"
-       "endmodule\n"},
-  };
-  FormatStyle style;
-  style.column_limit = 40;
-  style.indentation_spaces = 2;
-  style.wrap_spaces = 4;
-  style.alignment_group_boundary =
-      AlignmentGroupBoundary::kBlankLinesAndSeparatorComments;
-  style.assignment_statement_alignment = AlignmentPolicy::kAlign;
-  for (const auto &test_case : kTestCases) {
-    VLOG(1) << "code-to-format:\n" << test_case.input << "<EOF>";
-    std::ostringstream stream;
-    const auto status =
-        FormatVerilog(test_case.input, "<filename>", style, stream);
-    EXPECT_OK(status) << status.message();
-    EXPECT_EQ(stream.str(), test_case.expected) << "code:\n" << test_case.input;
-  }
-}
-
-<<<<<<< HEAD
 // Regression for https://github.com/chipsalliance/verible/issues/2540:
 // Trailing EOL comment after `end` before `else if` must not change whether
 // the else-if assignment stays on one line across re-format (convergence).
@@ -19629,6 +19289,7 @@ TEST(FormatterEndToEndTest, EndElseIfWithEOLCommentConverges) {
   }
 }
 
+
 // Regression for https://github.com/chipsalliance/verible/issues/2542:
 // Continuation EOL comments after a wrapped assign must keep a stable column
 // across re-format (convergence).
@@ -19671,7 +19332,9 @@ TEST(FormatterEndToEndTest, ContinuationCommentAfterWrappedAssignConverges) {
     EXPECT_OK(status) << status.message();
     EXPECT_EQ(stream.str(), test_case.expected) << "code:\n" << test_case.input;
   }
-=======
+}
+
+
 // Regression for https://github.com/chipsalliance/verible/issues/2544:
 // Wrapping a $bits(...)'(...) cast may leave `MACRO at EOL, reclassifying
 // MacroIdentifier as MacroIdItem. FormatEquivalent must accept that, and
@@ -19688,6 +19351,35 @@ TEST(FormatterEndToEndTest, MacroBeforeCloseParenFormatEquivalent) {
   const auto status = FormatVerilog(kInput, "<filename>", style, stream);
   EXPECT_OK(status) << status.message();
   EXPECT_THAT(stream.str(), testing::HasSubstr("`TOKEN_BYTE"));
+}
+
+
+// Regression for https://github.com/chipsalliance/verible/issues/2539:
+// A // comment followed by a line-continuation `\` before aligned ports must
+// not abort in align.h, and must keep the comment on its own line.
+TEST(FormatterEndToEndTest, PortListCommentWithLineContinuationDoesNotAbort) {
+  static constexpr std::string_view kInput =
+      "module m (\n"
+      "//\\\n"
+      "input a\n"
+      ",input b\n"
+      ");\n"
+      "endmodule\n";
+  FormatStyle style;
+  std::ostringstream stream;
+  const auto status = FormatVerilog(kInput, "<filename>", style, stream);
+  EXPECT_OK(status) << status.message();
+  const std::string out = stream.str();
+  // Must not glue the line-continuation onto the following port declaration.
+  EXPECT_THAT(out, testing::Not(testing::HasSubstr("//\\  input")));
+  EXPECT_THAT(out, testing::HasSubstr("//\\"));
+  EXPECT_THAT(out, testing::HasSubstr("input a"));
+  EXPECT_THAT(out, testing::HasSubstr("input b"));
+  EXPECT_THAT(out, testing::HasSubstr("endmodule"));
+  // Comment line and first port remain on separate lines.
+  EXPECT_THAT(out, testing::ContainsRegex(R"(//\\\n\s*input a)"));
+}
+
 
 }  // namespace
 }  // namespace formatter
