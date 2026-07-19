@@ -26,7 +26,6 @@
 #include <string_view>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -50,7 +49,6 @@
 #include "verible/common/util/expandable-tree-view.h"
 #include "verible/common/util/interval-set.h"
 #include "verible/common/util/interval.h"
-#include "verible/common/util/iterator-range.h"
 #include "verible/common/util/logging.h"
 #include "verible/common/util/spacer.h"
 #include "verible/common/util/tree-operations.h"
