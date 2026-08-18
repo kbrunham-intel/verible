@@ -28,8 +28,14 @@ Wrapping a long function header **drops the function parameters**. Still happens
 on current master: the formatted output is not even valid SystemVerilog. Worse
 than a style bug.
 
+Draft PR: [#2578](https://github.com/chipsalliance/verible/pull/2578)
+(`kbrunham-intel/fix/886`).
+
 ### 3. Spaces inserted in `*nix` paths — [#2352](https://github.com/chipsalliance/verible/issues/2352)
 
 Turns `` `PATH_MY_MODULE/src/config_class.sv `` into
 `` `PATH_MY_MODULE / src / config_class.sv ``, which **does not compile**.
 Small, well-scoped.
+
+Draft PR: [#2577](https://github.com/chipsalliance/verible/pull/2577)
+(`kbrunham-intel/fix/2352`).
