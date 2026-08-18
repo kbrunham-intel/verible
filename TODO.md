@@ -39,3 +39,16 @@ Small, well-scoped.
 
 Draft PR: [#2577](https://github.com/chipsalliance/verible/pull/2577)
 (`kbrunham-intel/fix/2352`).
+
+## Repo hygiene
+
+### `formatter_test.cc` is too large — [#2579](https://github.com/chipsalliance/verible/issues/2579)
+
+`verible/verilog/formatting/formatter_test.cc` is ~21k lines. Split by concern
+(macros, alignment, wrapping, …) so formatter PRs stop colliding at the end of
+one file.
+
+### `run-format.sh` should be a no-op on master — [#2580](https://github.com/chipsalliance/verible/issues/2580)
+
+Running `.github/bin/run-format.sh` currently rewrites files that were already
+on master. Land a format-only cleanup so the tree matches CI style.
