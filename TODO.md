@@ -40,7 +40,7 @@ Small, well-scoped.
 Draft PR: [#2577](https://github.com/chipsalliance/verible/pull/2577)
 (`kbrunham-intel/fix/2352`).
 
-## Repo hygiene
+## Issues I created
 
 ### `formatter_test.cc` is too large — [#2579](https://github.com/chipsalliance/verible/issues/2579)
 
@@ -52,3 +52,10 @@ one file.
 
 Running `.github/bin/run-format.sh` currently rewrites files that were already
 on master. Land a format-only cleanup so the tree matches CI style.
+
+### Other open formatter issues
+
+- [#2539](https://github.com/chipsalliance/verible/issues/2539) — CHECK abort on line-continuation before aligned ports. PR [#2546](https://github.com/chipsalliance/verible/pull/2546).
+- [#2542](https://github.com/chipsalliance/verible/issues/2542) — non-convergence with continuation EOL comments. PR [#2543](https://github.com/chipsalliance/verible/pull/2543).
+- [#2544](https://github.com/chipsalliance/verible/issues/2544) — MacroIdentifier vs MacroIdItem at EOL. PR [#2545](https://github.com/chipsalliance/verible/pull/2545).
+- [#2547](https://github.com/chipsalliance/verible/issues/2547) — non-convergence wrapping multi-line macro sums. PR [#2548](https://github.com/chipsalliance/verible/pull/2548).
